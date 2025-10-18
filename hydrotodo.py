@@ -2,6 +2,9 @@ import curses
 import sqlite3
 import os
 
+# original @ https://github.com/Henriquehnnm/HydroToDo
+# this is just translated for personal use
+
 # HydroToDo Stable
 # Caracteres para borda arredondada
 TL = '╭'
@@ -31,7 +34,7 @@ def init_db():
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     text TEXT NOT NULL,
                     done INTEGER NOT NULL DEFAULT 0,
-                    category TEXT NOT NULL DEFAULT 'Geral'
+                    category TEXT NOT NULL DEFAULT 'Default'
                 )''')
     c.execute('''CREATE TABLE IF NOT EXISTS deleted_categories (
                     name TEXT PRIMARY KEY
@@ -39,12 +42,12 @@ def init_db():
     c.execute("PRAGMA table_info(todos)")
     columns = [row[1] for row in c.fetchall()]
     if 'category' not in columns:
-        c.execute("ALTER TABLE todos ADD COLUMN category TEXT NOT NULL DEFAULT 'Geral'")
+        c.execute("ALTER TABLE todos ADD COLUMN category TEXT NOT NULL DEFAULT 'Default'")
     conn.commit()
     conn.close()
 
 
-def load_todos(category='Geral'):
+def load_todos(category='Default'):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('SELECT id, text, done FROM todos WHERE category = ?', (category,))
@@ -53,7 +56,7 @@ def load_todos(category='Geral'):
     return todos
 
 
-def add_todo(text, category='Geral'):
+def add_todo(text, category='Default'):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('INSERT INTO todos (text, done, category) VALUES (?, 0, ?)', (text, category))
@@ -118,7 +121,7 @@ def get_all_categories():
     deleted = set(row[0] for row in c.fetchall())
     conn.close()
     filtered = [cat for cat in cats if cat not in deleted]
-    return filtered if filtered else ['Geral']
+    return filtered if filtered else ['Default']
 
 
 def main(stdscr):
@@ -141,17 +144,17 @@ def main(stdscr):
 
     show_help = False
     help_lines = [
-        "Comandos disponíveis:",
+        "Available commands:",
         "",
-        "↑↓         Navegar entre tarefas",
-        "Enter      Marcar/desmarcar tarefa",
-        "a          Adicionar nova tarefa",
-        "d          Deletar tarefa selecionada",
-        "Ctrl+T     Nova aba",
-        "Ctrl+W     Fechar aba",
-        "←/→        Trocar aba",
-        "h          Mostrar/ocultar ajuda",
-        "q          Sair do programa",
+        "↑↓         Navigate tasks",
+        "Enter      Check/uncheck task",
+        "a          Add new task",
+        "d          Delete selected task",
+        "Ctrl+T     New list",
+        "Ctrl+W     Delete list",
+        "←/→        Change between list",
+        "h          Show/hide help",
+        "q          Quit HydroToDo",
     ]
 
     while True:
@@ -162,7 +165,7 @@ def main(stdscr):
         min_width = 80
         min_height = 30
         if width < min_width or height < min_height:
-            msg = f"Resolução atual: {width}x{height} | Mínima: {min_width}x{min_height}"
+            msg = f"Current resolution: {width}x{height} | Minimum: {min_width}x{min_height}"
             stdscr.clear()
             msg_x = max(0, min(width - 1, (width - len(msg)) // 2))
             msg_y = min(height - 1, height // 2)
@@ -239,7 +242,7 @@ def main(stdscr):
                 start = 0
                 end = len(todos)
             if len(todos) == 0:
-                msg = "Nenhuma tarefa ainda..."
+                msg = "This list is empty"
                 msg_y = box_y + (box_h // 2)
                 msg_x = box_x + ((box_w - len(msg)) // 2)
                 stdscr.addstr(msg_y, msg_x, msg, curses.color_pair(2) | curses.A_BOLD)
@@ -258,7 +261,7 @@ def main(stdscr):
                 stdscr.addstr(box_y + box_h - 2, box_x + box_w - 3, '↓', curses.color_pair(2) | curses.A_BOLD)
 
         # Comando de ajuda minimalista
-        help_hint = "Pressione 'h' para ajuda"
+        help_hint = "Press 'h' for help"
         stdscr.addstr(height - 2, max(0, (width - len(help_hint)) // 2), help_hint, curses.color_pair(4) | curses.A_BOLD)
 
         stdscr.refresh()
@@ -268,7 +271,7 @@ def main(stdscr):
         if key == 20:  # Ctrl+T
             if len(tabs) < max_tabs:
                 curses.echo()
-                prompt = "Nome da nova categoria: "
+                prompt = "Name of the new list: "
                 stdscr.addstr(height - 4, 2, " " * (width - 4))
                 stdscr.addstr(height - 4, 2, prompt, curses.A_BOLD)
                 stdscr.refresh()
@@ -321,7 +324,7 @@ def main(stdscr):
                 tabs[current_tab] = load_todos(tab_categories[current_tab])
         elif key == ord('a'):
             curses.echo()
-            prompt = "Nova tarefa: "
+            prompt = "New task: "
             box_y = title_box_y + title_box_h + 2
             box_x = (width - min(50, width - 4)) // 2
             box_w = min(50, width - 4)
@@ -349,4 +352,4 @@ if __name__ == "__main__":
     try:
         curses.wrapper(main)
     except KeyboardInterrupt:
-        pass  # Sai silenciosamente ao pressionar Ctrl+C
+        pass  # Sa ao pressionar Ctrl+C
